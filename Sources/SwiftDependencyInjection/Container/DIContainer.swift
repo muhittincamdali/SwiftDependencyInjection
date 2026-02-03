@@ -1,6 +1,110 @@
 import Foundation
 import Combine
 
+// MARK: - Service Key
+
+/// A key uniquely identifying a service registration.
+public struct ServiceKey: Hashable {
+    /// The type identifier string.
+    public let typeIdentifier: String
+    
+    /// The optional name qualifier.
+    public let name: String?
+    
+    /// Creates a service key for a type.
+    /// - Parameters:
+    ///   - type: The service type.
+    ///   - name: An optional qualifier name.
+    public init<T>(type: T.Type, name: String? = nil) {
+        self.typeIdentifier = String(describing: type)
+        self.name = name
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(typeIdentifier)
+        hasher.combine(name)
+    }
+    
+    public static func == (lhs: ServiceKey, rhs: ServiceKey) -> Bool {
+        lhs.typeIdentifier == rhs.typeIdentifier && lhs.name == rhs.name
+    }
+}
+
+// MARK: - Service Registration
+
+/// Holds a factory closure and scope for a registered service.
+public final class ServiceRegistration {
+    /// The lifecycle scope.
+    public let scope: Scope
+    
+    /// The factory closure.
+    private let factory: (DIContainer) -> Any
+    
+    /// Cached singleton instance.
+    private var cachedInstance: Any?
+    
+    /// Creates a registration.
+    /// - Parameters:
+    ///   - scope: The lifecycle scope.
+    ///   - factory: The factory closure.
+    public init(scope: Scope, factory: @escaping (DIContainer) -> Any) {
+        self.scope = scope
+        self.factory = factory
+    }
+    
+    /// Resolves the service from the container.
+    /// - Parameter container: The container for dependency resolution.
+    /// - Returns: The service instance.
+    public func resolve(from container: DIContainer) -> Any {
+        switch scope {
+        case .singleton:
+            if let cached = cachedInstance {
+                return cached
+            }
+            let instance = factory(container)
+            cachedInstance = instance
+            return instance
+        case .transient:
+            return factory(container)
+        }
+    }
+    
+    /// Clears the cached singleton instance.
+    public func clearCache() {
+        cachedInstance = nil
+    }
+}
+
+// MARK: - Circular Dependency Detector
+
+/// Detects circular dependencies during resolution.
+final class CircularDependencyDetector {
+    /// Currently resolving keys.
+    private var resolutionStack: [ServiceKey] = []
+    
+    /// Pushes a key onto the resolution stack.
+    func push(_ key: ServiceKey) {
+        resolutionStack.append(key)
+    }
+    
+    /// Pops a key from the resolution stack.
+    func pop() {
+        _ = resolutionStack.popLast()
+    }
+    
+    /// Checks if resolving the key would create a cycle.
+    func wouldCauseCycle(_ key: ServiceKey) -> Bool {
+        resolutionStack.contains(key)
+    }
+    
+    /// Resets the detector.
+    func reset() {
+        resolutionStack.removeAll()
+    }
+}
+
+// MARK: - DI Container
+
 /// The central dependency injection container.
 ///
 /// `DIContainer` manages service registrations and resolves dependencies
@@ -30,13 +134,13 @@ public final class DIContainer: ObservableObject {
     // MARK: - Properties
 
     /// All service registrations keyed by their service key.
-    private var registrations: [ServiceKey: Registration] = [:]
+    private var registrations: [ServiceKey: ServiceRegistration] = [:]
 
     /// Factory registrations keyed by type identifier.
     private var factories: [String: Any] = [:]
 
-    /// Dependency graph for circular dependency detection.
-    private let graph = DependencyGraph()
+    /// Circular dependency detector.
+    private let circularDetector = CircularDependencyDetector()
 
     /// Lock for thread-safe access to registrations.
     private let lock = NSRecursiveLock()
@@ -69,7 +173,7 @@ public final class DIContainer: ObservableObject {
         factory: @escaping () -> T
     ) -> DIContainer {
         let key = ServiceKey(type: type, name: name)
-        let registration = Registration(scope: scope) { _ in factory() }
+        let registration = ServiceRegistration(scope: scope) { _ in factory() }
         lock.lock()
         registrations[key] = registration
         lock.unlock()
@@ -98,7 +202,7 @@ public final class DIContainer: ObservableObject {
         factory: @escaping (DIContainer) -> T
     ) -> DIContainer {
         let key = ServiceKey(type: type, name: name)
-        let registration = Registration(scope: scope) { container in factory(container) }
+        let registration = ServiceRegistration(scope: scope) { container in factory(container) }
         lock.lock()
         registrations[key] = registration
         lock.unlock()
@@ -121,14 +225,15 @@ public final class DIContainer: ObservableObject {
         lock.unlock()
 
         if let registration = registration {
-            graph.pushResolution(for: key)
-            if graph.hasCircularDependency(for: key) {
+            if circularDetector.wouldCauseCycle(key) {
                 assertionFailure(
                     "[SwiftDependencyInjection] Circular dependency detected for \(key.typeIdentifier)"
                 )
             }
+            
+            circularDetector.push(key)
             let instance = registration.resolve(from: self)
-            graph.popResolution(for: key)
+            circularDetector.pop()
 
             guard let typed = instance as? T else {
                 fatalError(
@@ -177,34 +282,6 @@ public final class DIContainer: ObservableObject {
         return self
     }
 
-    // MARK: - Factory Registration
-
-    /// Registers a factory for a given type.
-    /// - Parameters:
-    ///   - type: The type the factory produces.
-    ///   - factory: The factory instance.
-    public func registerFactory<T>(_ type: T.Type, factory: Factory<T>) {
-        let identifier = String(describing: type)
-        lock.lock()
-        factories[identifier] = factory
-        lock.unlock()
-    }
-
-    /// Resolves an instance using a registered factory.
-    /// - Parameter type: The type to create.
-    /// - Returns: A new instance from the factory.
-    public func resolveFactory<T>(_ type: T.Type) -> T {
-        let identifier = String(describing: type)
-        lock.lock()
-        let factory = factories[identifier]
-        lock.unlock()
-
-        guard let typedFactory = factory as? Factory<T> else {
-            fatalError("[SwiftDependencyInjection] No factory registered for \(identifier)")
-        }
-        return typedFactory.create(from: self)
-    }
-
     // MARK: - Container Management
 
     /// Removes all registrations and cached instances.
@@ -213,7 +290,7 @@ public final class DIContainer: ObservableObject {
         registrations.removeAll()
         factories.removeAll()
         lock.unlock()
-        graph.reset()
+        circularDetector.reset()
     }
 
     /// Removes a specific registration.
