@@ -1,5 +1,28 @@
 import Foundation
 
+// MARK: - Dependency Module Protocol
+
+/// Protocol for defining dependency modules that group related registrations.
+///
+/// Modules help organize dependency registrations into logical groups.
+///
+/// Example:
+/// ```swift
+/// struct NetworkModule: DependencyModule {
+///     func register(in container: Container) {
+///         container.register(URLSession.self) { _ in URLSession.shared }
+///         container.register(APIClient.self) { r in
+///             APIClient(session: r.resolve(URLSession.self))
+///         }
+///     }
+/// }
+/// ```
+public protocol DependencyModule {
+    /// Registers all dependencies provided by this module.
+    /// - Parameter container: The container to register dependencies in.
+    func register(in container: Container)
+}
+
 /// The main dependency injection container.
 ///
 /// Manages service registrations and resolves dependencies with support

@@ -49,31 +49,21 @@ public extension Resolver {
 /// A type-erased resolver wrapper for passing resolution capability without
 /// exposing the full container interface.
 public final class AnyResolver: Resolver {
-    private let _resolve: (Any.Type) -> Any
-    private let _resolveNamed: (Any.Type, String) -> Any
-    private let _resolveOptional: (Any.Type) -> Any?
+    private let wrapped: Resolver
 
     public init(_ resolver: Resolver) {
-        _resolve = { type in
-            resolver.resolve(type as! Any.Type)
-        }
-        _resolveNamed = { type, name in
-            resolver.resolve(type as! Any.Type, name: name)
-        }
-        _resolveOptional = { type in
-            resolver.resolveOptional(type as! Any.Type)
-        }
+        self.wrapped = resolver
     }
 
     public func resolve<T>(_ type: T.Type) -> T {
-        _resolve(type) as! T
+        wrapped.resolve(type)
     }
 
     public func resolve<T>(_ type: T.Type, name: String) -> T {
-        _resolveNamed(type, name) as! T
+        wrapped.resolve(type, name: name)
     }
 
     public func resolveOptional<T>(_ type: T.Type) -> T? {
-        _resolveOptional(type) as? T
+        wrapped.resolveOptional(type)
     }
 }
