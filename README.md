@@ -1,52 +1,91 @@
-<div align="center">
+<p align="center">
+  <img src="Assets/logo.png" alt="SwiftDependencyInjection" width="200"/>
+</p>
 
-# 💉 SwiftDependencyInjection
+<h1 align="center">SwiftDependencyInjection</h1>
 
-**Compile-time safe dependency injection with Swift macros**
+<p align="center">
+  <strong>💉 Compile-time safe dependency injection with Swift macros</strong>
+</p>
 
-[![Swift](https://img.shields.io/badge/Swift-5.9+-F05138?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org)
-[![iOS](https://img.shields.io/badge/iOS-15.0+-000000?style=for-the-badge&logo=apple&logoColor=white)](https://developer.apple.com/ios/)
-[![SPM](https://img.shields.io/badge/SPM-Compatible-FA7343?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org/package-manager/)
-[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
-
-</div>
-
----
-
-## ✨ Features
-
-- 🔒 **Compile-Time Safe** — Catch errors at build time
-- 🏷️ **Swift Macros** — Modern macro-based API
-- 🧪 **Testable** — Easy mock injection
-- 📦 **Lightweight** — Minimal runtime overhead
-- 🔄 **Scopes** — Singleton, transient, scoped
+<p align="center">
+  <img src="https://img.shields.io/badge/Swift-6.0-orange.svg" alt="Swift"/>
+  <img src="https://img.shields.io/badge/iOS-17.0+-blue.svg" alt="iOS"/>
+</p>
 
 ---
 
-## 🚀 Quick Start
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| 🔒 **Type-Safe** | Compile-time verification |
+| ⚡ **No Runtime** | Zero runtime overhead |
+| 🏗️ **Scopes** | Singleton, transient, scoped |
+| 🧪 **Testable** | Easy mock injection |
+| 📦 **Macros** | Swift 5.9+ macros |
+
+## Quick Start
 
 ```swift
-import SwiftDependencyInjection
+import SwiftDI
 
-// Register
+// Define dependencies
 @Module
 struct AppModule {
-    @Provides static func provideUserService() -> UserService {
-        UserServiceImpl()
+    @Singleton
+    func provideNetworkService() -> NetworkService {
+        URLSessionNetworkService()
+    }
+    
+    @Singleton
+    func provideUserRepository(network: NetworkService) -> UserRepository {
+        UserRepositoryImpl(network: network)
+    }
+    
+    @Transient
+    func provideUserViewModel(repo: UserRepository) -> UserViewModel {
+        UserViewModel(repository: repo)
     }
 }
 
 // Inject
-class ProfileViewModel {
-    @Inject var userService: UserService
-}
+@Inject var viewModel: UserViewModel
 
-// Test with mock
-Container.shared.register(MockUserService(), for: UserService.self)
+// Or explicit
+let viewModel = Container.resolve(UserViewModel.self)
 ```
 
----
+## Scopes
 
-## 📄 License
+```swift
+@Singleton // One instance
+@Transient // New instance each time
+@Scoped("session") // Per scope lifetime
+```
 
-MIT • [@muhittincamdali](https://github.com/muhittincamdali)
+## Property Injection
+
+```swift
+class MyViewController: UIViewController {
+    @Inject var viewModel: MyViewModel
+    @Inject var analytics: AnalyticsService
+}
+```
+
+## Testing
+
+```swift
+// Override for tests
+Container.register(UserRepository.self) {
+    MockUserRepository()
+}
+```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+MIT License
