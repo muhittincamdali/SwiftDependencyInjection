@@ -15,6 +15,9 @@
 
 <h1 align="center">SwiftDependencyInjection</h1>
 
+## 🚀 Killer Feature: @AutoWirable Swift Macros
+Forget manual container registration. Annotate your services with `@AutoWirable` and our SwiftSyntax Macro will automatically generate the dependency injection graph at compile-time.
+
 <p align="center">
   <strong>💉 Compile-time safe dependency injection with Swift macros</strong>
 </p>
