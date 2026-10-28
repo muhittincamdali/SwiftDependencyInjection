@@ -1,80 +1,76 @@
-# Contributing to SwiftRouter
+# Contributing to SwiftDependencyInjection
 
-First off, thank you for considering contributing to SwiftRouter! It's people like you that make SwiftRouter such a great tool.
+Thank you for helping. This guide covers what you need to build, test and change the package.
 
-## Code of Conduct
+## Ground rules
 
-This project and everyone participating in it is governed by our Code of Conduct. By participating, you are expected to uphold this code.
+- Be kind; the [code of conduct](CODE_OF_CONDUCT.md) applies everywhere in the project.
+- Report security problems privately, as described in [SECURITY.md](SECURITY.md).
+- Open an issue before a large change, so we can agree on the API first.
 
-## How Can I Contribute?
+## Set up
 
-### Reporting Bugs
+You need Xcode 26 or later (Swift 6.2).
 
-Before creating bug reports, please check the existing issues as you might find out that you don't need to create one. When you are creating a bug report, please include as many details as possible:
-
-- **Use a clear and descriptive title**
-- **Describe the exact steps which reproduce the problem**
-- **Provide specific examples to demonstrate the steps**
-- **Describe the behavior you observed after following the steps**
-- **Explain which behavior you expected to see instead and why**
-- **Include Swift version and OS version**
-
-### Suggesting Enhancements
-
-Enhancement suggestions are tracked as GitHub issues. When creating an enhancement suggestion, please include:
-
-- **Use a clear and descriptive title**
-- **Provide a step-by-step description of the suggested enhancement**
-- **Provide specific examples to demonstrate the steps**
-- **Describe the current behavior and explain which behavior you expected to see instead**
-- **Explain why this enhancement would be useful**
-
-### Pull Requests
-
-1. Fork the repo and create your branch from `main`
-2. If you've added code that should be tested, add tests
-3. If you've changed APIs, update the documentation
-4. Ensure the test suite passes
-5. Make sure your code follows the existing style (SwiftLint)
-6. Issue that pull request!
-
-## Development Setup
-
-```bash
-# Clone your fork
-git clone https://github.com/YOUR_USERNAME/SwiftRouter.git
-
-# Navigate to the project
-cd SwiftRouter
-
-# Open in Xcode
-open Package.swift
-
-# Run tests
+```sh
+git clone https://github.com/muhittincamdali/SwiftDependencyInjection.git
+cd SwiftDependencyInjection
+swift build
 swift test
 ```
 
-## Style Guide
+Open `Package.swift` in Xcode to work on the library and the macro, and
+`Examples/DependencyDemo/DependencyDemo.xcodeproj` to run the example app.
 
-- Follow [Swift API Design Guidelines](https://swift.org/documentation/api-design-guidelines/)
-- Use SwiftLint for code style consistency
-- Write meaningful commit messages following [Conventional Commits](https://www.conventionalcommits.org/)
-- Document public APIs with DocC-compatible comments
+## Checks to run before a pull request
 
-## Commit Messages
+```sh
+swift test                                    # macOS: library, macro and exit tests
+xcodebuild test -scheme SwiftDependencyInjection-Tests -skipMacroValidation \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+xcodebuild docbuild -scheme SwiftDependencyInjection -destination 'generic/platform=macOS'
+xcodebuild build -project Examples/DependencyDemo/DependencyDemo.xcodeproj \
+  -scheme DependencyDemo -destination 'generic/platform=iOS Simulator' -skipMacroValidation
+```
 
-We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
+The `SwiftDependencyInjection-Tests` scheme leaves out the macro tests: Xcode builds a target
+that depends on a macro for the Mac, so it cannot run on a simulator. `swift test` runs them.
+CI runs the same steps, builds for tvOS, watchOS and visionOS, and checks links.
 
-- `feat:` A new feature
-- `fix:` A bug fix
-- `docs:` Documentation only changes
-- `style:` Code style changes (formatting, semicolons, etc)
-- `refactor:` Code change that neither fixes a bug nor adds a feature
-- `test:` Adding missing tests
-- `chore:` Changes to the build process or auxiliary tools
+## Writing code
 
-Example: `feat(deeplink): add universal link support`
+- The library compiles in the Swift 6 language mode without warnings; shared values are
+  `Sendable`.
+- Every macro diagnostic says what is wrong and how to fix it, and has a test in
+  `Tests/SwiftDependencyInjectionMacrosTests`.
+- The macro must not report an error for valid code. When a check cannot be exact (reads in
+  nested closures, shadowed names), it stays silent and leaves the case to the run-time check.
+- Generated code calls only the public API of the library and uses fully qualified names
+  (`SwiftDependencyInjection.DependencyStorage`).
+- Document every public symbol; `xcodebuild docbuild` must report no warnings.
 
-## License
+## Writing tests
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
+- Use Swift Testing. Macro expansions are checked with `assertContainerExpansion` (a full
+  snapshot) or `expandContainer` (diagnostics and single members) from
+  `Tests/SwiftDependencyInjectionMacrosTests/Support.swift`.
+- Runtime behaviour is tested through real containers declared with the macro in
+  `Tests/SwiftDependencyInjectionTests/Fixtures.swift`. Process-stopping failures are tested
+  with exit tests, which run on macOS.
+- Test the edge cases: concurrent first reads, overrides after a value was built, main-actor
+  containers, backticked names, and cycles through methods and closures.
+
+## README samples
+
+The README's code comes from `Examples/DependencyDemo/DependencyDemo/ReadmeSamples.swift`, which
+the tests compile through a symlink, from `DependencyDemoApp.swift` and from
+`Tests/SwiftDependencyInjectionTests/ReadmeSamplesTests.swift`. Change the sample there first,
+then copy it into the README. Regenerate the screenshots with
+`scripts/capture-example-screens.sh` when a demo screen changes.
+
+## Commits and pull requests
+
+- Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`,
+  `test:`, `ci:`), one change per commit, with a body that says why.
+- Add a line to the `Unreleased` section of [CHANGELOG.md](CHANGELOG.md) for every change a
+  user would notice.
