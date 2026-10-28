@@ -20,11 +20,13 @@ struct OverridesDemoView: View {
             Section {
                 LoadStateView(state: stubbed)
             } header: {
-                Text("Same container, API overridden")
+                Text("Same container type, API overridden")
             } footer: {
                 CodeText("""
                     dependencies.override {
-                        $0.api = { StubProfileAPI(profiles: .preview) }
+                        $0.api = {
+                            StubProfileAPI(profiles: .preview)
+                        }
                     }
                     """)
             }

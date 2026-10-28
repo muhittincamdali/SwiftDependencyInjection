@@ -20,7 +20,11 @@ struct ScopesDemoView: View {
                 Button("Read profileStore (shared)", systemImage: "shippingbox") { readStore() }
                 Button("Read profileEditor (transient)", systemImage: "square.and.pencil") { readEditor() }
                 Button("Start a session for each of two users", systemImage: "person.2") { startSessions() }
-                Button("Clear log", systemImage: "trash", role: .destructive) { reads.removeAll() }
+                Button("Clear log", systemImage: "trash", role: .destructive) {
+                    reads.removeAll()
+                    logged.removeAll()
+                    seen.removeAll()
+                }
             }
 
             Section {
@@ -77,8 +81,12 @@ struct ScopesDemoView: View {
     }
 
     @State private var seen: Set<ObjectIdentifier> = []
+    /// Keeps every logged instance alive. A transient instance that was released could be
+    /// allocated at the same address again, and would then look like the same instance.
+    @State private var logged: [AnyObject] = []
 
     private func log(_ what: String, instance: AnyObject) {
+        logged.append(instance)
         let identifier = ObjectIdentifier(instance)
         let isNew = seen.insert(identifier).inserted
         let address = String(UInt(bitPattern: identifier.hashValue), radix: 16)
