@@ -1,0 +1,43 @@
+{
+  "name": "SwiftDependencyInjection",
+  "repository": "muhittincamdali/SwiftDependencyInjection",
+  "tagline": {
+    "en": "Dependency containers for Swift 6 that the compiler checks, with typed test overrides and no global state."
+  },
+  "tags": {
+    "en": [
+      "Swift 6",
+      "iOS · macOS",
+      "Swift macro",
+      "Typed overrides"
+    ]
+  },
+  "motif": "code",
+  "buttons": [
+    "start",
+    "docs",
+    "examples"
+  ],
+  "links": {
+    "docs": "https://muhittincamdali.github.io/SwiftDependencyInjection/documentation/swiftdependencyinjection/",
+    "examples": "Examples/"
+  },
+  "languages": [
+    "en",
+    "tr",
+    "zh-CN",
+    "ja",
+    "ko",
+    "es",
+    "de",
+    "fr",
+    "pt-BR",
+    "ru"
+  ],
+  "docc": {
+    "targets": [
+      "SwiftDependencyInjection"
+    ]
+  },
+  "socialTheme": "dark"
+}
