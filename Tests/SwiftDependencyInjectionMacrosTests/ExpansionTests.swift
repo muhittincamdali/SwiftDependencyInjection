@@ -83,10 +83,13 @@ struct ExpansionTests {
         )
     }
 
-    @Test("A main-actor container gets @MainActor override closures")
-    func mainActorContainer() throws {
+    @Test(
+        "A main-actor container gets @MainActor override closures",
+        arguments: ["MainActor", "_Concurrency.MainActor"]
+    )
+    func mainActorContainer(attribute: String) throws {
         let expansion = try expandContainer("""
-            @MainActor @DependencyContainer
+            @\(attribute) @DependencyContainer
             final class App {
                 var router: Router { shared(\\.router) { Router() } }
             }

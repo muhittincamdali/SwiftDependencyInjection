@@ -7,6 +7,9 @@ import SwiftSyntaxMacros
 public struct DependencyContainerMacro: MemberMacro, ExtensionMacro {
     private static let module = "SwiftDependencyInjection"
 
+    /// The spellings of the main actor attribute: the plain name and the module-qualified one.
+    private static let mainActorNames: Set<String> = ["MainActor", "_Concurrency.MainActor"]
+
     public static func expansion(
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
@@ -34,7 +37,8 @@ public struct DependencyContainerMacro: MemberMacro, ExtensionMacro {
 
         let access = typeAccess(of: classDecl.modifiers)
         let isMainActor = classDecl.attributes.contains { attribute in
-            attribute.as(AttributeSyntax.self)?.attributeName.trimmedDescription == "MainActor"
+            guard let attribute = attribute.as(AttributeSyntax.self) else { return false }
+            return mainActorNames.contains(attribute.attributeName.trimmedDescription)
         }
         return [
             "\(raw: access)nonisolated let dependencyStorage = \(raw: module).DependencyStorage()",
