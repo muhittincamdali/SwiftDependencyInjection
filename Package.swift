@@ -37,6 +37,9 @@ let package = Package(
             name: "SwiftDependencyInjectionTests",
             dependencies: ["SwiftDependencyInjection"]
         ),
+        // Xcode builds a target that depends on a macro for the build machine, so the iOS
+        // simulator run uses the SwiftDependencyInjection-Tests scheme, which leaves this target
+        // out; `swift test` runs it on macOS.
         .testTarget(
             name: "SwiftDependencyInjectionMacrosTests",
             dependencies: [
