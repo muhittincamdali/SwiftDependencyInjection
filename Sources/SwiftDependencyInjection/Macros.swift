@@ -32,6 +32,10 @@
 /// nonisolated container may build its dependencies on any thread. In a module whose default
 /// isolation is `MainActor`, write `@MainActor` on the container too: the macro sees only the
 /// source of the class, not the module setting.
+///
+/// The macro reads only the class body. Declare every dependency there: one declared in an
+/// extension still works, but it has no override field, is not in the graph and is not part of
+/// the cycle check, and the macro cannot warn about it.
 @attached(member, names: named(dependencyStorage), named(Overrides), named(override), named(dependencyGraph))
 @attached(extension, conformances: DependencyContainer)
 public macro DependencyContainer() = #externalMacro(

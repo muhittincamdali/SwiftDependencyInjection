@@ -66,5 +66,9 @@ replaced through typed overrides, with cycles found by the compiler.
 - A dependency cannot be declared inside `#if` in the class body, because the macro cannot tell
   which branch is built; it reports an error. Declare the dependency once and put the `#if`
   inside its closure, as in `shared(\.logger) { #if DEBUG … #else … #endif }`.
+- The macro reads only the class body. A dependency declared in an extension of the container
+  compiles and is cached like the others, but it has no `Overrides` field, is not in
+  `dependencyGraph` and is left out of the compile-time cycle check, without a warning. Declare
+  dependencies in the class body.
 - The macro needs to know the container's isolation from its source; in a module with
   `MainActor` default isolation, write `@MainActor` on the container.
