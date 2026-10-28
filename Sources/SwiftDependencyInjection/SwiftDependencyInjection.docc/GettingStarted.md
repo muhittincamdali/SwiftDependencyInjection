@@ -10,7 +10,7 @@ In Xcode, choose **File › Add Package Dependencies…**, enter
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/muhittincamdali/SwiftDependencyInjection.git", branch: "main")
+    .package(url: "https://github.com/muhittincamdali/SwiftDependencyInjection.git", from: "2.0.0")
 ],
 targets: [
     .target(name: "YourApp", dependencies: [

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-10-28
+
 ### Added
 
 - `@DependencyContainer`, a macro for final classes that list their dependencies as computed
@@ -54,5 +56,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 First release: a dependency container with scoped, lazy and hierarchical injection.
 
-[Unreleased]: https://github.com/muhittincamdali/SwiftDependencyInjection/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/muhittincamdali/SwiftDependencyInjection/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/muhittincamdali/SwiftDependencyInjection/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/muhittincamdali/SwiftDependencyInjection/releases/tag/v1.0.0
