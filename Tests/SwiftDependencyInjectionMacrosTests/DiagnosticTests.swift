@@ -34,6 +34,27 @@ struct DiagnosticTests {
         ) == true)
     }
 
+    @Test("The README cycle sample gets the error the README shows")
+    func readmeCycleSample() throws {
+        // Copied from README.md, "Let the compiler find cycles"; keep both in step.
+        let expansion = try expandContainer("""
+            @DependencyContainer
+            final class AppDependencies {
+                var api: any ProfileAPI {
+                    shared(\\.api) { TokenRefreshingAPI(tokens: tokens) }
+                }
+
+                var tokens: TokenStore {
+                    shared(\\.tokens) { TokenStore(api: api) }
+                }
+            }
+            """)
+        #expect(expansion.diagnostics == [
+            "3:9 Dependency cycle: api → tokens → api. 'api' needs itself while it is being built; pass one "
+                + "side a closure that reads the other later, or move the shared part into its own dependency",
+        ])
+    }
+
     @Test("A cycle through a plain computed property is found")
     func cycleThroughPlainProperty() throws {
         let expansion = try expandContainer("""
