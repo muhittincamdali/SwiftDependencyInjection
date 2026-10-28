@@ -219,6 +219,9 @@ error: Dependency cycle: api → tokens → api. 'api' needs itself while it is 
 side a closure that reads the other later, or move the shared part into its own dependency
 ```
 
+[`DiagnosticTests.swift`](Tests/SwiftDependencyInjectionMacrosTests/DiagnosticTests.swift) expands
+this sample with the macro and checks the exact error text.
+
 Reads inside nested closures are not followed, because a callback usually runs after building.
 If such a closure runs while building, the container stops the process with
 `dependency cycle in AppDependencies: api → tokens → api` instead of overflowing the stack.

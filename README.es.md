@@ -1,4 +1,4 @@
-<!-- i18n-source: README.md@fe1b1436375ad6c38c0fa56ad238003e76254a1f status=reviewed -->
+<!-- i18n-source: README.md@db0ca6cfacb99492bf497614f3316a072a7016fa status=reviewed -->
 <!-- brand:start -->
 
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/muhittincamdali/SwiftDependencyInjection/main/.github/brand/banner-dark.svg"><source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/muhittincamdali/SwiftDependencyInjection/main/.github/brand/banner-light.svg"><img src="https://raw.githubusercontent.com/muhittincamdali/SwiftDependencyInjection/main/.github/brand/banner-light.svg" alt="SwiftDependencyInjection: Dependency containers for Swift 6 that the compiler checks, with typed test overrides and no global state."></picture></p>
@@ -196,6 +196,8 @@ var tokens: TokenStore {
 error: Dependency cycle: api → tokens → api. 'api' needs itself while it is being built; pass one
 side a closure that reads the other later, or move the shared part into its own dependency
 ```
+
+[`DiagnosticTests.swift`](Tests/SwiftDependencyInjectionMacrosTests/DiagnosticTests.swift) expande este ejemplo con la macro y comprueba el texto exacto del error.
 
 Las lecturas dentro de closures anidados no se siguen, porque un callback suele ejecutarse después de la construcción. Si un closure así se ejecuta durante la construcción, el contenedor detiene el proceso con `dependency cycle in AppDependencies: api → tokens → api` en lugar de desbordar la pila.
 

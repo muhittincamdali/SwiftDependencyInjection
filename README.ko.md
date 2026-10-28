@@ -1,4 +1,4 @@
-<!-- i18n-source: README.md@fe1b1436375ad6c38c0fa56ad238003e76254a1f status=reviewed -->
+<!-- i18n-source: README.md@db0ca6cfacb99492bf497614f3316a072a7016fa status=reviewed -->
 <!-- brand:start -->
 
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/muhittincamdali/SwiftDependencyInjection/main/.github/brand/banner-dark.svg"><source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/muhittincamdali/SwiftDependencyInjection/main/.github/brand/banner-light.svg"><img src="https://raw.githubusercontent.com/muhittincamdali/SwiftDependencyInjection/main/.github/brand/banner-light.svg" alt="SwiftDependencyInjection: Dependency containers for Swift 6 that the compiler checks, with typed test overrides and no global state."></picture></p>
@@ -196,6 +196,8 @@ var tokens: TokenStore {
 error: Dependency cycle: api → tokens → api. 'api' needs itself while it is being built; pass one
 side a closure that reads the other later, or move the shared part into its own dependency
 ```
+
+[`DiagnosticTests.swift`](Tests/SwiftDependencyInjectionMacrosTests/DiagnosticTests.swift)는 이 예제를 매크로로 전개하고 오류 문구가 정확히 같은지 확인합니다.
 
 중첩된 클로저 안의 읽기는 추적하지 않습니다. 콜백은 보통 생성이 끝난 뒤에 실행되기 때문입니다. 그런 클로저가 생성 중에 실행되면 컨테이너는 스택 오버플로 대신 `dependency cycle in AppDependencies: api → tokens → api` 메시지와 함께 프로세스를 중단합니다.
 
