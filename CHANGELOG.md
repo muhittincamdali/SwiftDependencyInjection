@@ -19,8 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to the property's type.
 - Compile-time errors for dependency cycles (once per cycle, with the shortest path), providers
   outside a computed property getter, next to other statements or with another property's key
-  path, dependencies with a setter, an `async` or `throws` getter or a `some` type, and for
-  `@DependencyContainer` on anything but a final class (with a fix-it that adds `final`).
+  path, dependencies with a setter, an `async` or `throws` getter or a `some` type, dependencies
+  declared inside `#if`, and for `@DependencyContainer` on anything but a final class (with a
+  fix-it that adds `final`).
 - A run-time cycle check for cycles the macro cannot see (through methods or closures that run
   at once): the process stops with the path instead of overflowing the stack.
 - Override closures that are `@MainActor` for a `@MainActor` container and `@Sendable`

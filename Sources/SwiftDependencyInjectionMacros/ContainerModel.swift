@@ -43,6 +43,12 @@ struct ContainerModel {
             let decl = item.decl
             if let variable = decl.as(VariableDeclSyntax.self) {
                 readVariable(variable)
+            } else if decl.is(IfConfigDeclSyntax.self) {
+                // The macro cannot tell which clause is built, so a dependency there could not
+                // get an override field, a graph node and a cycle check valid in every build.
+                for call in ProviderCallFinder.calls(in: Syntax(decl)) {
+                    diagnose(call, .providerInConditionalBlock(Self.providerName(of: call) ?? "shared"))
+                }
             } else {
                 checkReservedName(of: decl)
                 reportProviderCalls(in: Syntax(decl))

@@ -8,6 +8,7 @@ enum ContainerDiagnostic: DiagnosticMessage {
     case cycle([String])
     case providerOutsideGetter(String)
     case providerNotSoleStatement(String)
+    case providerInConditionalBlock(String)
     case wrongKeyPath(provider: String, name: String)
     case writableDependency(String)
     case effectfulGetter(String)
@@ -33,6 +34,10 @@ enum ContainerDiagnostic: DiagnosticMessage {
         case let .providerNotSoleStatement(name):
             "Write the getter as a single '\(name)(\\.property) { … }' call and put the other "
                 + "statements inside the closure"
+        case let .providerInConditionalBlock(name):
+            "A dependency cannot be declared inside '#if', because @DependencyContainer cannot tell "
+                + "which branch is built; declare it once and put the '#if' inside the closure passed "
+                + "to '\(name)'"
         case let .wrongKeyPath(provider, name):
             "Pass '\\.\(name)' to '\(provider)': the key path of the property whose getter calls it "
                 + "is the key of the instance and the key of its override"
@@ -58,6 +63,7 @@ enum ContainerDiagnostic: DiagnosticMessage {
         case .cycle: "cycle"
         case .providerOutsideGetter: "providerOutsideGetter"
         case .providerNotSoleStatement: "providerNotSoleStatement"
+        case .providerInConditionalBlock: "providerInConditionalBlock"
         case .wrongKeyPath: "wrongKeyPath"
         case .writableDependency: "writableDependency"
         case .effectfulGetter: "effectfulGetter"

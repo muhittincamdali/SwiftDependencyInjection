@@ -63,5 +63,8 @@ replaced through typed overrides, with cycles found by the compiler.
 - There are no parameterized dependencies. Write a method that takes the parameter and builds
   the object from dependencies; it is not cached and not in `Overrides`.
 - Providers are synchronous. Start asynchronous work from a method after building.
+- A dependency cannot be declared inside `#if` in the class body, because the macro cannot tell
+  which branch is built; it reports an error. Declare the dependency once and put the `#if`
+  inside its closure, as in `shared(\.logger) { #if DEBUG … #else … #endif }`.
 - The macro needs to know the container's isolation from its source; in a module with
   `MainActor` default isolation, write `@MainActor` on the container.

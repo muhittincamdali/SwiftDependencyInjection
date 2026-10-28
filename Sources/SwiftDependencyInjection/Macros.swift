@@ -13,7 +13,8 @@
 /// It also checks the container at compile time and reports an error for a dependency cycle (a
 /// provider that reads itself directly or through other dependencies), for a provider outside a
 /// property getter or with the key path of another property, for a dependency with a setter, an
-/// `async` or `throws` getter or a `some` type, and for a declaration that is not a final class.
+/// `async` or `throws` getter or a `some` type, for a dependency declared inside `#if` (put the
+/// `#if` inside the provider closure instead), and for a declaration that is not a final class.
 ///
 /// ```swift
 /// @DependencyContainer

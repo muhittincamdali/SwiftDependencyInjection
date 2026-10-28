@@ -193,6 +193,39 @@ struct DiagnosticTests {
         ])
     }
 
+    @Test("A dependency inside #if is rejected; an #if inside its closure is not")
+    func conditionalDependency() throws {
+        let expansion = try expandContainer("""
+            @DependencyContainer
+            final class App {
+                #if DEBUG
+                var logger: Logger {
+                    shared(\\.logger) { Logger(tag: "debug") }
+                }
+                #else
+                var logger: Logger {
+                    transient(\\.logger) { Logger(tag: "release") }
+                }
+                #endif
+                var clock: Clock {
+                    shared(\\.clock) {
+                        #if DEBUG
+                        Clock(log: logger)
+                        #else
+                        Clock()
+                        #endif
+                    }
+                }
+            }
+            """)
+        #expect(expansion.diagnostics == [
+            "5:9 A dependency cannot be declared inside '#if', because @DependencyContainer cannot tell which branch is built; declare it once and put the '#if' inside the closure passed to 'shared'",
+            "9:9 A dependency cannot be declared inside '#if', because @DependencyContainer cannot tell which branch is built; declare it once and put the '#if' inside the closure passed to 'transient'",
+        ])
+        #expect(expansion.members.contains("var clock: (@Sendable () -> Clock)?"))
+        #expect(!expansion.members.contains("var logger:"))
+    }
+
     @Test("Dependencies take no key, setter, effects or opaque type")
     func dependencyShape() throws {
         let expansion = try expandContainer("""
