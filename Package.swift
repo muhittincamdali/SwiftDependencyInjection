@@ -10,7 +10,11 @@ let package = Package(
         .watchOS(.v9),
         .visionOS(.v1),
     ],
-    products: [],
-    targets: [],
+    products: [
+        .library(name: "SwiftDependencyInjection", targets: ["SwiftDependencyInjection"]),
+    ],
+    targets: [
+        .target(name: "SwiftDependencyInjection"),
+    ],
     swiftLanguageModes: [.v6]
 )
