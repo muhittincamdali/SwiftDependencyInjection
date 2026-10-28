@@ -16,7 +16,10 @@ DerivedData/
 
 # Swift Package Manager
 .build/
-.swiftpm/
+.swiftpm/*
+!.swiftpm/xcode/
+.swiftpm/xcode/*
+!.swiftpm/xcode/xcshareddata/
 Packages/
 Package.resolved
 

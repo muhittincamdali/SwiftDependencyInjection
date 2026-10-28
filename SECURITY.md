@@ -1,53 +1,36 @@
-# Security Policy
+# Security policy
 
-## Supported Versions
+## Supported versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.x.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+Security fixes go into the latest release and the `main` branch.
 
-## Reporting a Vulnerability
+## Reporting a vulnerability
 
-We take the security of SwiftRouter seriously. If you have discovered a security vulnerability, we appreciate your help in disclosing it to us in a responsible manner.
+Report it privately, not in a public issue: open the repository's
+[Security tab](https://github.com/muhittincamdali/SwiftDependencyInjection/security) and choose
+**Report a vulnerability**, or follow the other channels in the
+[security policy of the muhittincamdali repositories](https://github.com/muhittincamdali/.github/blob/main/SECURITY.md).
+Include a small program or test that shows the problem and the Swift, Xcode and OS versions you
+ran it on.
 
-### How to Report
+## What SwiftDependencyInjection promises
 
-**Please do not report security vulnerabilities through public GitHub issues.**
+SwiftDependencyInjection runs inside your app and handles only the closures you give it. These
+are the properties a report can hold it to:
 
-Instead, please report them via email to the repository owner. You can find contact information on the GitHub profile.
+- It does not log, print, store or send anything. The only text it produces is the message of
+  a dependency cycle, which names the container type and the dependencies involved and is
+  passed to `fatalError`.
+- Memory is bounded by your declarations: a container keeps at most one instance and one
+  override per dependency property, and the chain of dependencies being built is no deeper than
+  the number of dependencies, because a dependency that is requested again while it is being
+  built stops the process instead of recursing.
+- A shared dependency is built exactly once per container, also when many threads read it at
+  the same time; everything a container stores is guarded by one lock.
+- Overrides never cross containers: an override is stored in the container it was applied to.
+- The macro runs at build time on the source of the class it is attached to. It reads no files,
+  environment or network, and the code it generates calls only the public API of the library.
 
-Please include the following information:
-
-- Type of issue (e.g., deep link injection, state manipulation, etc.)
-- Full paths of source file(s) related to the manifestation of the issue
-- The location of the affected source code (tag/branch/commit or direct URL)
-- Any special configuration required to reproduce the issue
-- Step-by-step instructions to reproduce the issue
-- Proof-of-concept or exploit code (if possible)
-- Impact of the issue, including how an attacker might exploit it
-
-### What to Expect
-
-- A confirmation of receipt within 48 hours
-- An assessment of the vulnerability within 7 days
-- Regular updates on our progress
-- Credit for responsible disclosure (if desired)
-
-## Security Best Practices
-
-When using SwiftRouter in your projects:
-
-1. **Validate Deep Links** - Always validate URL parameters before navigation
-2. **Use Route Guards** - Implement authentication guards for protected routes
-3. **Sanitize Parameters** - Never trust user input from URL parameters
-4. **Audit Navigation Paths** - Review which screens are accessible via deep links
-
-## Security Features
-
-SwiftRouter includes several security considerations:
-
-- **Type-Safe Parameters** - Reduces injection risks
-- **Route Guards** - Authentication/authorization interceptors
-- **URL Validation** - Built-in URL parsing with validation
-- **No External Dependencies** - Minimal attack surface
+Providers run while their container's lock is held. A provider that blocks waiting for another
+thread that reads the same container deadlocks, as with any lock; keep providers to building
+objects.

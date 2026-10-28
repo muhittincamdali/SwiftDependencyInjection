@@ -1,0 +1,13 @@
+version: 1
+builder:
+  configs:
+    - platform: ios
+      scheme: SwiftDependencyInjection
+      documentation_targets: [SwiftDependencyInjection]
+    - platform: macos-spm
+    - platform: tvos
+      scheme: SwiftDependencyInjection
+    - platform: watchos
+      scheme: SwiftDependencyInjection
+    - platform: visionos
+      scheme: SwiftDependencyInjection
