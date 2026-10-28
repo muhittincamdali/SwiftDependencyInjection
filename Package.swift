@@ -34,6 +34,10 @@ let package = Package(
             dependencies: ["SwiftDependencyInjectionMacros"]
         ),
         .testTarget(
+            name: "SwiftDependencyInjectionTests",
+            dependencies: ["SwiftDependencyInjection"]
+        ),
+        .testTarget(
             name: "SwiftDependencyInjectionMacrosTests",
             dependencies: [
                 "SwiftDependencyInjectionMacros",
