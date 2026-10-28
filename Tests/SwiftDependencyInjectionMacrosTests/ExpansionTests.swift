@@ -1,4 +1,3 @@
-#if canImport(SwiftDependencyInjectionMacros)
 import Testing
 
 @Suite("Macro expansion")
@@ -10,20 +9,20 @@ struct ExpansionTests {
             @DependencyContainer
             final class App {
                 var clock: any Clock<Duration> {
-                    shared { ContinuousClock() }
+                    shared(\\.clock) { ContinuousClock() }
                 }
                 var model: Model {
-                    transient { Model(clock: clock) }
+                    transient(\\.model) { Model(clock: clock) }
                 }
             }
             """,
             expandedSource: """
             final class App {
                 var clock: any Clock<Duration> {
-                    shared { ContinuousClock() }
+                    shared(\\.clock) { ContinuousClock() }
                 }
                 var model: Model {
-                    transient { Model(clock: clock) }
+                    transient(\\.model) { Model(clock: clock) }
                 }
 
                 nonisolated let dependencyStorage = SwiftDependencyInjection.DependencyStorage()
@@ -51,12 +50,12 @@ struct ExpansionTests {
                     var overrides = Overrides()
                     configure(&overrides)
                     if let make = overrides.clock {
-                        dependencyStorage._setOverride(for: "clock") {
+                        _setOverride(\\.clock) {
                             make()
                         }
                     }
                     if let make = overrides.model {
-                        dependencyStorage._setOverride(for: "model") {
+                        _setOverride(\\.model) {
                             make()
                         }
                     }
@@ -89,7 +88,7 @@ struct ExpansionTests {
         let expansion = try expandContainer("""
             @MainActor @DependencyContainer
             final class App {
-                var router: Router { shared { Router() } }
+                var router: Router { shared(\\.router) { Router() } }
             }
             """)
         #expect(expansion.diagnostics.isEmpty)
@@ -102,10 +101,10 @@ struct ExpansionTests {
         let expansion = try expandContainer("""
             @DependencyContainer
             public final class App {
-                public var client: Client { shared { Client() } }
-                package var cache: Cache { shared { Cache() } }
-                var model: Model { transient { Model() } }
-                private var secret: Secret { shared { Secret() } }
+                public var client: Client { shared(\\.client) { Client() } }
+                package var cache: Cache { shared(\\.cache) { Cache() } }
+                var model: Model { transient(\\.model) { Model() } }
+                private var secret: Secret { shared(\\.secret) { Secret() } }
             }
             """)
         #expect(expansion.diagnostics.isEmpty)
@@ -126,13 +125,13 @@ struct ExpansionTests {
         let expansion = try expandContainer("""
             @DependencyContainer
             final class App {
-                var `default`: Settings! { shared { Settings() } }
-                var reader: Reader { return self.transient { Reader(settings: self.default) } }
+                var `default`: Settings! { shared(\\.`default`) { Settings() } }
+                var reader: Reader { return self.transient(\\.reader) { Reader(settings: self.default) } }
             }
             """)
         #expect(expansion.diagnostics.isEmpty)
         #expect(expansion.members.contains("var `default`: (@Sendable () -> Settings?)?"))
-        #expect(expansion.members.contains(#"_setOverride(for: "default")"#))
+        #expect(expansion.members.contains(#"_setOverride(\.`default`)"#))
         #expect(expansion.members.contains(#"Node(name: "reader", type: "Reader", lifetime: .transient)"#))
         #expect(expansion.members.contains(#"Edge(from: "reader", to: "default")"#))
     }
@@ -144,9 +143,9 @@ struct ExpansionTests {
             final class App {
                 let configuration: Configuration
                 var baseURL: URL { configuration.baseURL }
-                var client: Client { shared { Client(url: baseURL) } }
-                var cache: Cache { shared { Cache(client: other.client) } }
-                var loader: Loader { shared { Loader(client: client, cache: cache) } }
+                var client: Client { shared(\\.client) { Client(url: baseURL) } }
+                var cache: Cache { shared(\\.cache) { Cache(client: other.client) } }
+                var loader: Loader { shared(\\.loader) { Loader(client: client, cache: cache) } }
             }
             """)
         #expect(expansion.diagnostics.isEmpty)
@@ -180,4 +179,3 @@ struct ExpansionTests {
         #expect(try containerExtensions(source, missingConformances: []).isEmpty)
     }
 }
-#endif

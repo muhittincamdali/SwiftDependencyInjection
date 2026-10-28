@@ -8,7 +8,7 @@ enum ContainerDiagnostic: DiagnosticMessage {
     case cycle([String])
     case providerOutsideGetter(String)
     case providerNotSoleStatement(String)
-    case explicitKey(String)
+    case wrongKeyPath(provider: String, name: String)
     case writableDependency(String)
     case effectfulGetter(String)
     case opaqueType(String)
@@ -28,14 +28,14 @@ enum ContainerDiagnostic: DiagnosticMessage {
                 + "it is being built; pass one side a closure that reads the other later, or move "
                 + "the shared part into its own dependency"
         case let .providerOutsideGetter(name):
-            "'\(name) { }' can only be called from the getter of a computed property; the "
-                + "property name is the key of the instance"
+            "'\(name)' can only be called from the getter of a computed property, with the key "
+                + "path of that property"
         case let .providerNotSoleStatement(name):
-            "Write the getter as a single '\(name) { … }' call and put the other statements "
-                + "inside the closure"
-        case let .explicitKey(name):
-            "Remove the 'key:' argument; inside a dependency container '\(name)' uses the "
-                + "property name as the key, which the generated overrides rely on"
+            "Write the getter as a single '\(name)(\\.property) { … }' call and put the other "
+                + "statements inside the closure"
+        case let .wrongKeyPath(provider, name):
+            "Pass '\\.\(name)' to '\(provider)': the key path of the property whose getter calls it "
+                + "is the key of the instance and the key of its override"
         case let .writableDependency(name):
             "Dependency '\(name)' cannot have a setter; replace it in tests with override(_:)"
         case let .effectfulGetter(name):
@@ -58,7 +58,7 @@ enum ContainerDiagnostic: DiagnosticMessage {
         case .cycle: "cycle"
         case .providerOutsideGetter: "providerOutsideGetter"
         case .providerNotSoleStatement: "providerNotSoleStatement"
-        case .explicitKey: "explicitKey"
+        case .wrongKeyPath: "wrongKeyPath"
         case .writableDependency: "writableDependency"
         case .effectfulGetter: "effectfulGetter"
         case .opaqueType: "opaqueType"

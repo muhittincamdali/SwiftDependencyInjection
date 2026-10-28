@@ -86,9 +86,8 @@ public struct DependencyContainerMacro: MemberMacro, ExtensionMacro {
 
     private static func overrideMethod(_ dependencies: [ContainerModel.Dependency], access: String) -> DeclSyntax {
         let applies = dependencies.map { dependency in
-            let key = StringLiteralExprSyntax(content: dependency.name)
-            return "    if let make = overrides.\(dependency.declaredName) {\n"
-                + "        dependencyStorage._setOverride(for: \(key)) { make() }\n"
+            "    if let make = overrides.\(dependency.declaredName) {\n"
+                + "        _setOverride(\\.\(dependency.declaredName)) { make() }\n"
                 + "    }"
         }
         let body = (["    var overrides = Overrides()", "    configure(&overrides)"] + applies)

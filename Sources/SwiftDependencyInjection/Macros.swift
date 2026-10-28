@@ -1,7 +1,7 @@
 /// Turns a final class into a dependency container.
 ///
 /// The class lists its dependencies as computed properties whose getter is a single
-/// ``DependencyContainer/shared(key:_:)`` or ``DependencyContainer/transient(key:_:)`` call.
+/// ``DependencyContainer/shared(_:name:_:)`` or ``DependencyContainer/transient(_:name:_:)`` call.
 /// The macro adds:
 ///
 /// - the ``DependencyContainer`` conformance and its `dependencyStorage`;
@@ -12,14 +12,14 @@
 ///
 /// It also checks the container at compile time and reports an error for a dependency cycle (a
 /// provider that reads itself directly or through other dependencies), for a provider outside a
-/// property getter, for a dependency with a setter, an `async` or `throws` getter or a `some`
-/// type, and for a declaration that is not a final class.
+/// property getter or with the key path of another property, for a dependency with a setter, an
+/// `async` or `throws` getter or a `some` type, and for a declaration that is not a final class.
 ///
 /// ```swift
 /// @DependencyContainer
 /// final class AppDependencies {
-///     var httpClient: any HTTPClient { shared { URLSessionHTTPClient() } }
-///     var profiles: ProfileRepository { shared { ProfileRepository(client: httpClient) } }
+///     var httpClient: any HTTPClient { shared(\.httpClient) { URLSessionHTTPClient() } }
+///     var profiles: ProfileRepository { shared(\.profiles) { ProfileRepository(client: httpClient) } }
 /// }
 ///
 /// let dependencies = AppDependencies()

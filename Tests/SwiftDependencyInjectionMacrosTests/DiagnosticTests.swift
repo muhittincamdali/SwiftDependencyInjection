@@ -1,4 +1,3 @@
-#if canImport(SwiftDependencyInjectionMacros)
 import SwiftSyntaxMacrosGenericTestSupport
 import Testing
 
@@ -11,7 +10,7 @@ struct DiagnosticTests {
         let expansion = try expandContainer("""
             @DependencyContainer
             final class App {
-                var clock: Clock { shared { Clock(parent: clock) } }
+                var clock: Clock { shared(\\.clock) { Clock(parent: clock) } }
             }
             """)
         #expect(expansion.diagnostics.count == 1)
@@ -23,9 +22,9 @@ struct DiagnosticTests {
         let expansion = try expandContainer("""
             @DependencyContainer
             final class App {
-                var session: Session { shared { Session(api: api) } }
-                var api: API { shared { API(tokens: tokens) } }
-                var tokens: Tokens { shared { Tokens(session: session, api: api) } }
+                var session: Session { shared(\\.session) { Session(api: api) } }
+                var api: API { shared(\\.api) { API(tokens: tokens) } }
+                var tokens: Tokens { shared(\\.tokens) { Tokens(session: session, api: api) } }
             }
             """)
         // tokens → api is a second, shorter cycle in the same component; one report covers both.
@@ -41,7 +40,7 @@ struct DiagnosticTests {
             @DependencyContainer
             final class App {
                 var headers: [String: String] { ["Authorization": client.token] }
-                var client: Client { shared { Client(headers: self.headers) } }
+                var client: Client { shared(\\.client) { Client(headers: self.headers) } }
             }
             """)
         #expect(expansion.messages.count == 1)
@@ -53,10 +52,10 @@ struct DiagnosticTests {
         let expansion = try expandContainer("""
             @DependencyContainer
             final class App {
-                var a: A { shared { A(b: b) } }
-                var b: B { shared { B(a: a) } }
-                var c: C { transient { C(c: c) } }
-                var d: D { shared { D(a: a) } }
+                var a: A { shared(\\.a) { A(b: b) } }
+                var b: B { shared(\\.b) { B(a: a) } }
+                var c: C { transient(\\.c) { C(c: c) } }
+                var d: D { shared(\\.d) { D(a: a) } }
             }
             """)
         #expect(expansion.diagnostics.count == 2)
@@ -71,25 +70,25 @@ struct DiagnosticTests {
             final class App {
                 let other: Other
                 var session: Session {
-                    shared {
+                    shared(\\.session) {
                         // A callback runs after building has finished.
                         Session(onExpiry: { self.session.refresh() })
                     }
                 }
                 var api: API {
-                    shared {
+                    shared(\\.api) {
                         // A local constant shadows the property.
                         let api = API.live
                         return api.configured(other.api)
                     }
                 }
                 var logger: Logger {
-                    shared {
+                    shared(\\.logger) {
                         func make() -> Logger { logger }
                         return make()
                     }
                 }
-                var label: Label { shared { Label(text: "session", key: \\.session) } }
+                var label: Label { shared(\\.label) { Label(text: "session", key: \\.session) } }
             }
             """)
         #expect(expansion.diagnostics.isEmpty)
@@ -161,18 +160,18 @@ struct DiagnosticTests {
         let expansion = try expandContainer("""
             @DependencyContainer
             final class App {
-                func client(for id: Int) -> Client { shared { Client(id: id) } }
-                init() { _ = transient { 1 } }
-                subscript(index: Int) -> Int { shared { index } }
-                lazy var cache: Cache = shared { Cache() }
-                struct Nested { var x: Int { shared { 1 } } }
+                func client(for id: Int) -> Client { shared(\\.client) { Client(id: id) } }
+                init() { _ = transient(\\.count) { 1 } }
+                subscript(index: Int) -> Int { shared(\\.count) { index } }
+                lazy var cache: Cache = shared(\\.cache) { Cache() }
+                struct Nested { var x: Int { shared(\\.x) { 1 } } }
             }
             """)
         #expect(expansion.messages == [
-            "'shared { }' can only be called from the getter of a computed property; the property name is the key of the instance",
-            "'transient { }' can only be called from the getter of a computed property; the property name is the key of the instance",
-            "'shared { }' can only be called from the getter of a computed property; the property name is the key of the instance",
-            "'shared { }' can only be called from the getter of a computed property; the property name is the key of the instance",
+            "'shared' can only be called from the getter of a computed property, with the key path of that property",
+            "'transient' can only be called from the getter of a computed property, with the key path of that property",
+            "'shared' can only be called from the getter of a computed property, with the key path of that property",
+            "'shared' can only be called from the getter of a computed property, with the key path of that property",
         ])
     }
 
@@ -183,14 +182,14 @@ struct DiagnosticTests {
             final class App {
                 var client: Client {
                     print("building")
-                    return shared { Client() }
+                    return shared(\\.client) { Client() }
                 }
-                var flag: Bool { true && transient { false } }
+                var flag: Bool { true && transient(\\.flag) { false } }
             }
             """)
         #expect(expansion.messages == [
-            "Write the getter as a single 'shared { … }' call and put the other statements inside the closure",
-            "Write the getter as a single 'transient { … }' call and put the other statements inside the closure",
+            #"Write the getter as a single 'shared(\.property) { … }' call and put the other statements inside the closure"#,
+            #"Write the getter as a single 'transient(\.property) { … }' call and put the other statements inside the closure"#,
         ])
     }
 
@@ -199,18 +198,18 @@ struct DiagnosticTests {
         let expansion = try expandContainer("""
             @DependencyContainer
             final class App {
-                var a: A { shared(key: "a") { A() } }
+                var a: A { shared(\\.b) { A() } }
                 var b: B {
-                    get { shared { B() } }
+                    get { shared(\\.b) { B() } }
                     set {}
                 }
-                var c: C { get async { shared { C() } } }
-                var d: some View { shared { Text("") } }
-                static var e: E { shared { E() } }
+                var c: C { get async { shared(\\.c) { C() } } }
+                var d: some View { shared(\\.d) { Text("") } }
+                static var e: E { shared(\\.e) { E() } }
             }
             """)
         #expect(expansion.messages == [
-            "Remove the 'key:' argument; inside a dependency container 'shared' uses the property name as the key, which the generated overrides rely on",
+            #"Pass '\.a' to 'shared': the key path of the property whose getter calls it is the key of the instance and the key of its override"#,
             "Dependency 'b' cannot have a setter; replace it in tests with override(_:)",
             "Dependency 'c' must have a synchronous, non-throwing getter; dependencies are built when they are read",
             "Dependency 'd' cannot have an opaque 'some' type, because an override has to name the type; use 'any' or a concrete type",
@@ -233,4 +232,3 @@ struct DiagnosticTests {
         #expect(expansion.members.contains("nodes: [],"))
     }
 }
-#endif

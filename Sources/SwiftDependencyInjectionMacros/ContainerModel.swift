@@ -116,8 +116,8 @@ struct ContainerModel {
         }
 
         let provider = Self.providerName(of: call) ?? "shared"
-        if call.arguments.contains(where: { $0.label?.text == "key" }) {
-            diagnose(call, .explicitKey(provider))
+        if !Self.passesKeyPath(of: name, to: call) {
+            diagnose(call.arguments.first.map { Syntax($0) } ?? Syntax(call), .wrongKeyPath(provider: provider, name: name))
         }
         if hasSetter {
             diagnose(nameToken, .writableDependency(name))
@@ -184,8 +184,8 @@ struct ContainerModel {
 
     // MARK: - Syntax helpers
 
-    /// The provider call when the getter consists of exactly `shared { … }`, `transient { … }`
-    /// or the same with `return` or `self.`.
+    /// The provider call when the getter consists of exactly `shared(\.name) { … }`,
+    /// `transient(\.name) { … }`, or the same with `return` or `self.`.
     static func soleProviderCall(in statements: CodeBlockItemListSyntax) -> FunctionCallExprSyntax? {
         guard statements.count == 1, let item = statements.first?.item else { return nil }
         let expression: ExprSyntax? = if let expr = item.as(ExprSyntax.self) {
@@ -219,6 +219,17 @@ struct ContainerModel {
             return nil
         }
         return providerNames.contains(name) ? name : nil
+    }
+
+    /// Whether the first argument of `call` is a key path to `name`, such as `\.name`. The
+    /// compiler checks its root type, which must be the container.
+    static func passesKeyPath(of name: String, to call: FunctionCallExprSyntax) -> Bool {
+        guard let first = call.arguments.first, first.label == nil,
+              let keyPath = first.expression.as(KeyPathExprSyntax.self),
+              keyPath.components.count == 1,
+              let component = keyPath.components.first?.component.as(KeyPathPropertyComponentSyntax.self)
+        else { return false }
+        return plainName(component.declName.baseName) == name
     }
 
     static func providerClosure(of call: FunctionCallExprSyntax) -> ClosureExprSyntax? {

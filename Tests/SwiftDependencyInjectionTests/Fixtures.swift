@@ -44,21 +44,21 @@ final class TestContainer {
     let serviceBuilds = Counter()
 
     var greeter: any Greeter {
-        shared {
+        shared(\.greeter) {
             builds.increment()
             return EnglishGreeter()
         }
     }
 
     var service: Service {
-        shared {
+        shared(\.service) {
             serviceBuilds.increment()
             return Service(greeter: greeter)
         }
     }
 
     var request: Service {
-        transient { Service(greeter: greeter) }
+        transient(\.request) { Service(greeter: greeter) }
     }
 
     /// A plain computed property: not a dependency, but its reads still count as edges.
@@ -67,7 +67,7 @@ final class TestContainer {
     }
 
     var report: String {
-        transient { greeting + " " + service.greeter.greet("report") }
+        transient(\.report) { greeting + " " + service.greeter.greet("report") }
     }
 }
 
@@ -84,11 +84,11 @@ final class Screen {
 @DependencyContainer
 final class MainActorContainer {
     var screen: Screen {
-        shared { Screen(title: "Live") }
+        shared(\.screen) { Screen(title: "Live") }
     }
 
     var detail: Screen {
-        transient { Screen(title: "Detail of \(screen.title)") }
+        transient(\.detail) { Screen(title: "Detail of \(screen.title)") }
     }
 }
 
@@ -104,7 +104,7 @@ final class SessionContainer {
     }
 
     var welcome: String {
-        shared { parent.greeter.greet(userName) }
+        shared(\.welcome) { parent.greeter.greet(userName) }
     }
 }
 
@@ -117,7 +117,7 @@ final class GenericContainer<Element: Sendable> {
     }
 
     var elements: [Element] {
-        shared { [element, element] }
+        shared(\.elements) { [element, element] }
     }
 }
 
@@ -126,11 +126,11 @@ public final class PublicContainer {
     public init() {}
 
     public var name: String {
-        shared { "public" }
+        shared(\.name) { "public" }
     }
 
     var internalValue: Int {
-        shared { 42 }
+        shared(\.internalValue) { 42 }
     }
 }
 
@@ -140,7 +140,7 @@ final class ManualContainer: DependencyContainer {
     let dependencyStorage = DependencyStorage()
 
     var greeter: any Greeter {
-        shared { EnglishGreeter() }
+        shared(\.greeter) { EnglishGreeter() }
     }
 }
 
@@ -151,19 +151,19 @@ final class Tracked: Sendable {}
 @DependencyContainer
 final class KeywordContainer {
     var `default`: String {
-        shared { "live" }
+        shared(\.`default`) { "live" }
     }
 
     var settings: String! {
-        shared { "settings" }
+        shared(\.settings) { "settings" }
     }
 
     private var secret: Int {
-        shared { 7 }
+        shared(\.secret) { 7 }
     }
 
     var revealed: Int {
-        transient { secret * 6 }
+        transient(\.revealed) { secret * 6 }
     }
 
     func overrideSecret(with value: Int) {

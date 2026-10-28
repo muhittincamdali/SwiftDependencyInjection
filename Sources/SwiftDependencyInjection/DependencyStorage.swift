@@ -4,13 +4,16 @@ import Foundation
 ///
 /// `@DependencyContainer` adds one storage to each container, so each container instance is its
 /// own scope: two containers never share a shared instance or an override. You do not call it
-/// directly; ``DependencyContainer/shared(key:_:)`` and ``DependencyContainer/transient(key:_:)``
-/// use it.
+/// directly; ``DependencyContainer/shared(_:name:_:)`` and
+/// ``DependencyContainer/transient(_:name:_:)`` use it.
+///
+/// Entries are keyed by the key path of the property, which fixes their type: the value stored
+/// for `\.api` is always an `api` value.
 ///
 /// One recursive lock guards everything. It is held while a dependency is built, so a shared
 /// dependency is built exactly once even when many threads ask for it at the same time, and a
 /// provider may read other dependencies of the same container. Because only the thread that holds
-/// the lock can be building, a name that is already in ``resolving`` means the provider asked for
+/// the lock can be building, a key that is already being built means the provider asked for
 /// itself: a dependency cycle.
 public final class DependencyStorage: @unchecked Sendable {
     // Invariant behind @unchecked Sendable: every stored property below is read and written only
@@ -18,78 +21,75 @@ public final class DependencyStorage: @unchecked Sendable {
     // container's isolation (@Sendable for a nonisolated container, @MainActor for a main-actor
     // container), so calling them from the getter that resolves them is safe.
     private let lock = NSRecursiveLock()
-    private var instances: [String: any Sendable] = [:]
-    private var overrides: [String: () -> Any] = [:]
-    private var resolving: [String] = []
+    private var instances: [AnyKeyPath: Any] = [:]
+    private var overrides: [AnyKeyPath: () -> Any] = [:]
+    private var resolving: [(key: AnyKeyPath, name: String)] = []
 
     /// Creates an empty storage.
     public init() {}
-
-    /// Stores a test override for the dependency `name` and drops its cached shared instance, so
-    /// the next read uses the override.
-    ///
-    /// Generated code calls this from the `override(_:)` method of a container, with a closure
-    /// that has the container's isolation. Call that method instead.
-    public func _setOverride(for name: String, _ make: @escaping () -> Any) {
-        lock.lock()
-        defer { lock.unlock() }
-        overrides[name] = make
-        instances[name] = nil
-    }
 
     /// The names of the dependencies that are being built on the calling thread, outermost first.
     var resolutionPath: [String] {
         lock.lock()
         defer { lock.unlock() }
-        return resolving
+        return resolving.map(\.name)
+    }
+
+    func setOverride(_ make: @escaping () -> Any, for key: AnyKeyPath) {
+        lock.lock()
+        defer { lock.unlock() }
+        overrides[key] = make
+        instances[key] = nil
     }
 
     func shared<Value: Sendable>(
-        _ name: String,
+        _ key: AnyKeyPath,
+        name: String,
         in container: String,
         make: () -> Value
     ) -> Value {
         lock.lock()
         defer { lock.unlock() }
-        if let instance = instances[name] {
-            return cast(instance, name: name, container: container)
+        if let instance = instances[key] {
+            return Self.cast(instance)
         }
-        let value = build(name, in: container, make: make)
-        instances[name] = value
+        let value: Value = build(key, name: name, in: container, make: make)
+        instances[key] = value
         return value
     }
 
     func transient<Value>(
-        _ name: String,
+        _ key: AnyKeyPath,
+        name: String,
         in container: String,
         make: () -> Value
     ) -> Value {
         lock.lock()
         defer { lock.unlock() }
-        return build(name, in: container, make: make)
+        return build(key, name: name, in: container, make: make)
     }
 
     /// Builds one value with the override if there is one, else with `make`. Called with the lock
     /// held.
-    private func build<Value>(_ name: String, in container: String, make: () -> Value) -> Value {
-        if resolving.contains(name) {
-            DependencyFailure.report(.cycle(path: resolving, repeating: name, container: container))
+    private func build<Value>(
+        _ key: AnyKeyPath,
+        name: String,
+        in container: String,
+        make: () -> Value
+    ) -> Value {
+        if resolving.contains(where: { $0.key == key }) {
+            DependencyFailure.report(.cycle(path: resolving.map(\.name), repeating: name, container: container))
         }
-        resolving.append(name)
+        resolving.append((key, name))
         defer { resolving.removeLast() }
-        guard let override = overrides[name] else { return make() }
-        return cast(override(), name: name, container: container)
+        guard let override = overrides[key] else { return make() }
+        return Self.cast(override())
     }
 
-    private func cast<Value>(_ value: Any, name: String, container: String) -> Value {
-        guard let typed = value as? Value else {
-            DependencyFailure.report(.typeMismatch(
-                name: name,
-                container: container,
-                stored: String(describing: type(of: value)),
-                requested: String(describing: Value.self)
-            ))
-        }
-        return typed
+    /// Entries are keyed by a `KeyPath<Container, Value>` and written only with a `Value` for
+    /// that key path, so the cast cannot fail.
+    private static func cast<Value>(_ value: Any) -> Value {
+        // swiftlint:disable:next force_cast
+        value as! Value
     }
 }

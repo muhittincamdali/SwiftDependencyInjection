@@ -123,6 +123,6 @@ struct ContainerTests {
 @DependencyContainer
 final class TrackingContainer {
     var tracked: Tracked {
-        shared { Tracked() }
+        shared(\.tracked) { Tracked() }
     }
 }

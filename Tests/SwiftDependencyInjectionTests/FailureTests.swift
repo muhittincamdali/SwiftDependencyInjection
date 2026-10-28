@@ -5,11 +5,11 @@ import Testing
 @DependencyContainer
 final class HiddenCycleContainer {
     var first: Int {
-        shared { makeFirst() }
+        shared(\.first) { makeFirst() }
     }
 
     var second: Int {
-        shared { first + 1 }
+        shared(\.second) { first + 1 }
     }
 
     func makeFirst() -> Int {
@@ -17,16 +17,15 @@ final class HiddenCycleContainer {
     }
 }
 
-/// Two properties that pass the same key by hand, which the macro would reject.
-final class CollidingKeysContainer: DependencyContainer {
-    let dependencyStorage = DependencyStorage()
-
-    var number: Int {
-        shared(key: "value") { 1 }
+/// A cycle inside a closure that runs at once; the macro does not follow nested closures.
+@DependencyContainer
+final class ClosureCycleContainer {
+    var numbers: [Int] {
+        shared(\.numbers) { [1, 2].map { $0 + total } }
     }
 
-    var text: String {
-        shared(key: "value") { "one" }
+    var total: Int {
+        shared(\.total) { numbers.count }
     }
 }
 
@@ -49,17 +48,6 @@ struct FailureTests {
         #expect(failure.message.contains("C: clock → clock."))
     }
 
-    @Test("A type mismatch names the property and both types")
-    func typeMismatchMessage() {
-        let failure = DependencyFailure.typeMismatch(
-            name: "text",
-            container: "CollidingKeysContainer",
-            stored: "Int",
-            requested: "String"
-        )
-        #expect(failure.message.contains("CollidingKeysContainer.text holds a Int, but a String was requested"))
-    }
-
     #if os(macOS)
     @Test("A cycle through a method stops the process with the cycle path")
     func runtimeCycleStopsTheProcess() async throws {
@@ -73,18 +61,16 @@ struct FailureTests {
         #expect(output.contains("dependency cycle in HiddenCycleContainer: first → second → first"))
     }
 
-    @Test("Two dependencies under one key stop the process with both types")
-    func keyCollisionStopsTheProcess() async throws {
+    @Test("A cycle through a closure that runs at once stops the process")
+    func closureCycleStopsTheProcess() async throws {
         let result = try await #require(
             processExitsWith: .failure,
             observing: [\.standardErrorContent]
         ) {
-            let container = CollidingKeysContainer()
-            _ = container.number
-            _ = container.text
+            _ = ClosureCycleContainer().total
         }
         let output = String(decoding: result.standardErrorContent, as: UTF8.self)
-        #expect(output.contains("CollidingKeysContainer.value holds a Int, but a String was requested"))
+        #expect(output.contains("dependency cycle in ClosureCycleContainer: total → numbers → total"))
     }
     #endif
 }

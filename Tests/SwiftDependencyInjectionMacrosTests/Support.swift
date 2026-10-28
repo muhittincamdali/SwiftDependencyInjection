@@ -1,4 +1,3 @@
-#if canImport(SwiftDependencyInjectionMacros)
 import SwiftDependencyInjectionMacros
 import SwiftDiagnostics
 import SwiftParser
@@ -90,4 +89,3 @@ func expandContainer(_ source: String) throws -> ContainerExpansion {
         members: members.map(\.description).joined(separator: "\n\n")
     )
 }
-#endif

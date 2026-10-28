@@ -13,9 +13,9 @@
 public struct DependencyGraph: Sendable, Equatable {
     /// How long a built instance lives.
     public enum Lifetime: String, Sendable, Equatable {
-        /// One instance per container, built on first use (``DependencyContainer/shared(key:_:)``).
+        /// One instance per container, built on first use (``DependencyContainer/shared(_:name:_:)``).
         case shared
-        /// A new instance on every read (``DependencyContainer/transient(key:_:)``).
+        /// A new instance on every read (``DependencyContainer/transient(_:name:_:)``).
         case transient
     }
 
